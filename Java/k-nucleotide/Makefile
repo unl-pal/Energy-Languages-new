@@ -1,14 +1,28 @@
-compile:
-	/usr/local/src/jdk1.8.0_121/bin/javac -d . -cp .:/usr/local/src/java-libs/fastutil-7.0.12.jar knucleotide.java
-measure:
-	sudo modprobe msr
-	sudo ../../RAPL/main "/usr/local/src/jdk1.8.0_121/bin/java  -cp .:/usr/local/src/java-libs/fastutil-7.0.12.jar knucleotide 0 < knucleotide-input25000000.txt" Java k-nucleotide
+JAVAC ?= javac
+JAVA  ?= java
+PYTEST ?= pytest
 
-run:
-	/usr/local/src/jdk1.8.0_121/bin/java  -cp .:/usr/local/src/java-libs/fastutil-7.0.12.jar knucleotide 0 < knucleotide-input25000000.txt
+CLASS := knucleotide
+SRC := $(CLASS).java
 
-mem:
-	/usr/local/src/jdk1.8.0_121/bin//usr/bin/time -v  java  -cp .:/usr/local/src/java-libs/fastutil-7.0.12.jar knucleotide 0 < knucleotide-input25000000.txt
+# override on command line if needed
+FASTUTIL_JAR ?= /usr/share/java/fastutil.jar
+CP := .:$(FASTUTIL_JAR)
 
-valgrind:
-	/usr/local/src/jdk1.8.0_121/bin/valgrind --tool=massif --stacks=yes  java  -cp .:/usr/local/src/java-libs/fastutil-7.0.12.jar knucleotide 0 < knucleotide-input25000000.txt
+N ?= 1000000000
+
+.PHONY: compile test run clean
+
+$(CLASS).class: $(SRC)
+	$(JAVAC) -d . -cp $(CP) $(SRC)
+
+compile: $(CLASS).class
+
+test: compile
+	FASTUTIL_JAR=$(FASTUTIL_JAR) LONG_REPEATS=$(N) LONG_ROUNDS=3 $(PYTEST) -q test_knucleotide_java.py
+
+run: compile
+	$(JAVA) -cp $(CP) $(CLASS) 0 < knucleotide-input25000000.txt
+
+clean:
+	rm -f $(CLASS).class
