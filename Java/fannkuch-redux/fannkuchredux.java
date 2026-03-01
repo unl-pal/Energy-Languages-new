@@ -1,11 +1,3 @@
-/*
- * The Computer Language Benchmarks Game
- * http://benchmarksgame.alioth.debian.org/
- *
- * Contributed by Oleg Mazurov, June 2010
- *
- */
-
 import java.util.concurrent.atomic.AtomicInteger;
 
 public final class fannkuchredux implements Runnable
@@ -35,6 +27,7 @@ public final class fannkuchredux implements Runnable
            p[i] = i;
         }
 
+        // Restore exact original logic for correctness
         for ( int i=count.length-1; i>0; --i ) {
             int d = idx / Fact[i];
             count[i] = d;

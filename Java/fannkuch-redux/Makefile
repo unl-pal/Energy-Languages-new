@@ -1,14 +1,33 @@
-compile:
-	/usr/local/src/jdk1.8.0_121/bin/javac -d .  fannkuchredux.java
-measure:
+JAVAC ?= javac
+JAVA  ?= java
+PYTEST ?= pytest
+
+CLASS := fannkuchredux
+SRC := $(CLASS).java
+N ?= 12
+
+.PHONY: compile test run clean measure mem valgrind
+
+$(CLASS).class: $(SRC)
+	$(JAVAC) -d . $(SRC)
+
+compile: $(CLASS).class
+
+run: compile
+	$(JAVA) -cp . $(CLASS) $(N)
+
+test: compile
+	$(PYTEST) -q test_fannkuchredux_java.py
+
+measure: compile
 	sudo modprobe msr
-	sudo ../../RAPL/main "/usr/local/src/jdk1.8.0_121/bin/java   fannkuchredux 12" Java fannkuch-redux
+	sudo ../../RAPL/main "$(JAVA) -cp . $(CLASS) $(N)" Java fannkuch-redux
 
-run:
-	/usr/local/src/jdk1.8.0_121/bin/java   fannkuchredux 12
+mem: compile
+	/usr/bin/time -v $(JAVA) -cp . $(CLASS) $(N)
 
-mem:
-	/usr/bin/time -v  /usr/local/src/jdk1.8.0_121/bin/java   fannkuchredux 12
+valgrind: compile
+	valgrind --tool=massif --stacks=yes $(JAVA) -cp . $(CLASS) $(N)
 
-valgrind:
-	valgrind --tool=massif --stacks=yes  /usr/local/src/jdk1.8.0_121/bin/java   fannkuchredux 12
+clean:
+	rm -f $(CLASS).class
