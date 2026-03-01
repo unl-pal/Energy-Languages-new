@@ -7,6 +7,7 @@
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -42,26 +43,52 @@ public class revcomp
 
    public static void main(String[] args) throws IOException
    {
-      int read;
-      byte[] buffer;
-      Finder lastFinder = null; 
-      
-      do {
-         buffer = new byte[CHUNK_SIZE];
-         read = System.in.read(buffer);
+      Finder lastFinder = null;
+
+      while (true) {
+         byte[] buffer = new byte[CHUNK_SIZE];
+         int read = 0;
+
+         while (read < CHUNK_SIZE) {
+            int n = System.in.read(buffer, read, CHUNK_SIZE - read);
+            if (n == -1) {
+               break;
+            }
+            read += n;
+         }
+
+         if (read <= 0) {
+            break;
+         }
+
+         if (read != buffer.length) {
+            buffer = Arrays.copyOf(buffer, read);
+         }
+
          list.add(buffer);
 
          Finder finder = new Finder(buffer, read, lastFinder);
          service.execute(finder);
          lastFinder = finder;
 
-      } while (read == CHUNK_SIZE);
+         if (read < CHUNK_SIZE) {
+            break;
+         }
+      }
+
+      if (lastFinder == null) {
+         service.shutdown();
+         return;
+      }
 
       Status status = lastFinder.finish();
       Mapper mapper = new Mapper(status.lastFinding, status.count - 1, status.lastMapper);
       service.execute(mapper);
 
       service.shutdown();
+      while (!service.isTerminated()) {
+         Thread.yield();
+      }
    }
 
    private static final class Status

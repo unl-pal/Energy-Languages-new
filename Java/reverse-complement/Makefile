@@ -1,15 +1,21 @@
+JAVA ?= java
+JAVAC ?= javac
+PYTEST ?= pytest
+CLASS := revcomp
+TEST_FILE := test_revcomp_java.py
+
+.PHONY: all compile run test clean
+
+all: compile
+
 compile:
-	cp revcomp.java-3.java revcomp.java
-	/usr/local/src/jdk1.8.0_121/bin/javac -d .  revcomp.java
-measure:
-	sudo modprobe msr
-	sudo ../../RAPL/main "/usr/local/src/jdk1.8.0_121/bin/java   revcomp 0 < ../../revcomp-input25000000.txt" Java reverse-complement
+	$(JAVAC) $(CLASS).java
 
-run:
-	/usr/local/src/jdk1.8.0_121/bin/java   revcomp 0 < ../../revcomp-input25000000.txt
+run: compile
+	$(JAVA) -cp . $(CLASS) 0
 
-mem:
-	/usr/bin/time -v /usr/local/src/jdk1.8.0_121/bin/java   revcomp 0 < ../../revcomp-input25000000.txt
+test: compile
+	$(PYTEST) -q $(TEST_FILE)
 
-valgrind:
-	valgrind --tool=massif --stacks=yes /usr/local/src/jdk1.8.0_121/bin/java   revcomp 0 < ../../revcomp-input25000000.txt
+clean:
+	rm -f $(CLASS)*.class
