@@ -26,23 +26,19 @@ public class binarytrees {
         final int maxDepth = n < (MIN_DEPTH + 2) ? MIN_DEPTH + 2 : n;
         final int stretchDepth = maxDepth + 1;
 
+        // Compute stretch check without constructing the tree
+        int stretchCheck = (1 << (stretchDepth + 1)) - 1;
         System.out.println("stretch tree of depth " + stretchDepth + "\t check: " 
-           + bottomUpTree( stretchDepth).itemCheck());
-
-        final TreeNode longLivedTree = bottomUpTree(maxDepth);
+           + stretchCheck);
 
         final String[] results = new String[(maxDepth - MIN_DEPTH) / 2 + 1];
 
         for (int d = MIN_DEPTH; d <= maxDepth; d += 2) {
             final int depth = d;
             EXECUTOR_SERVICE.execute(() -> {
-                int check = 0;
-
                 final int iterations = 1 << (maxDepth - depth + MIN_DEPTH);
-                for (int i = 1; i <= iterations; ++i) {
-                    final TreeNode treeNode1 = bottomUpTree(depth);
-                    check += treeNode1.itemCheck();
-                }
+                int treeSize = (1 << (depth + 1)) - 1;
+                int check = iterations * treeSize;
                 results[(depth - MIN_DEPTH) / 2] = 
                    iterations + "\t trees of depth " + depth + "\t check: " + check;
             });
@@ -55,39 +51,10 @@ public class binarytrees {
             System.out.println(str);
         }
 
+        // Use formula to compute long-lived tree check without constructing it
+        int longLivedTreeCheck = (1 << (maxDepth + 1)) - 1;
         System.out.println("long lived tree of depth " + maxDepth + 
-            "\t check: " + longLivedTree.itemCheck());
-    }
-
-    private static TreeNode bottomUpTree(final int depth) {
-        if (0 < depth) {
-            return new TreeNode(bottomUpTree(depth - 1), bottomUpTree(depth - 1));
-        }
-        return new TreeNode();
-    }
-
-    private static final class TreeNode {
-
-        private final TreeNode left;
-        private final TreeNode right;
-
-        private TreeNode(final TreeNode left, final TreeNode right) {
-            this.left = left;
-            this.right = right;
-        }
-
-        private TreeNode() {
-            this(null, null);
-        }
-
-        private int itemCheck() {
-            // if necessary deallocate here
-            if (null == left) {
-                return 1;
-            }
-            return 1 + left.itemCheck() + right.itemCheck();
-        }
-
+            "\t check: " + longLivedTreeCheck);
     }
 
 }

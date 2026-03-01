@@ -1,15 +1,25 @@
-compile:
-	cp binarytrees.java-7.java binarytrees.java
-	/usr/local/src/jdk1.8.0_121/bin/javac -d .  binarytrees.java
-measure:
-	sudo modprobe msr
-	sudo ../../RAPL/main "/usr/local/src/jdk1.8.0_121/bin/java binarytrees 21" Java binary-trees
+JAVAC ?= javac
+JAVA_RELEASE ?= 17
+JAVACFLAGS ?= --release $(JAVA_RELEASE)
+JAVA  ?= java
+PYTEST ?= pytest
 
-run:
-	/usr/local/src/jdk1.8.0_121/bin/java binarytrees 21
+CLASS := binarytrees
+SRC := $(CLASS).java
+N ?= 21
 
-mem:
-	/usr/bin/time -v/usr/local/src/jdk1.8.0_121/bin/ java binarytrees 21
+.PHONY: compile test run clean
 
-valgrind:
-	valgrind --tool=massif --stacks=yes /usr/local/src/jdk1.8.0_121/bin/java binarytrees 21
+$(CLASS).class: $(SRC)
+	$(JAVAC) $(JAVACFLAGS) -d . $(SRC)
+
+compile: $(CLASS).class
+
+run: compile
+	$(JAVA) -cp . $(CLASS) $(N)
+
+test: compile
+	$(PYTEST) -q test_binarytrees_java.py
+
+clean:
+	rm -f $(CLASS).class
