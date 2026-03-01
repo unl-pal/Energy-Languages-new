@@ -1,16 +1,31 @@
-compile:
-	cp pidigits.java-2.java pidigits.java
-	/usr/local/src/jdk1.8.0_121/bin/javac -d .  pidigits.java
-xmeasure:
-	sudo modprobe msr
-	sudo ../../RAPL/main "/usr/local/src/jdk1.8.0_121/bin/java -Djava.library.path=Include/java  pidigits 10000" Java pidigits
+JAVAC ?= javac
+JAVA  ?= java
+PYTEST ?= pytest
 
-run:
-	/usr/local/src/jdk1.8.0_121/bin/java -Djava.library.path=Include/java  pidigits 10000
+CLASS := pidigits
+SRC := $(CLASS).java
+N ?= 40000
 
-mem:
-	/usr/bin/time -v /usr/local/src/jdk1.8.0_121/bin/java -Djava.library.path=Include/java  pidigits 10000
+# Path containing libjgmplib.so
+JGMPLIB_DIR ?= /home/fatemeh/Desktop/copy/energybench/Energy-Languages/Java/pidigits
 
-valgrind:
-	valgrind --tool=massif --stacks=yes /usr/local/src/jdk1.8.0_121/bin/java -Djava.library.path=Include/java  pidigits 10000
+# Path containing libgmp.so
+GMP_DIR ?= /home/fatemeh/Energy-Languages/Java/pidigits
 
+JAVA_OPTS ?= -Djava.library.path=$(JGMPLIB_DIR)
+
+.PHONY: compile test run clean
+
+$(CLASS).class: $(SRC)
+	$(JAVAC) -d . $(SRC)
+
+compile: $(CLASS).class
+
+run: compile
+	LD_LIBRARY_PATH=$(GMP_DIR):$$LD_LIBRARY_PATH $(JAVA) $(JAVA_OPTS) -cp . $(CLASS) $(N)
+
+test: compile
+	JAVA_OPTS="$(JAVA_OPTS)" LD_LIBRARY_PATH="$(GMP_DIR):$$LD_LIBRARY_PATH" LONG_N=$(N) $(PYTEST) -q test_pidigits_java.py
+
+clean:
+	rm -f $(CLASS).class
