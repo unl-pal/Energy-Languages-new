@@ -1,15 +1,28 @@
+JAVAC ?= javac
+JAVA ?= java
+PYTEST ?= pytest -q
+
+CLASS = spectralnorm
+SRC = $(CLASS).java
+TEST = test_$(CLASS)_java.py
+
+SPECTRAL_N ?= 1000
+SPECTRAL_N_LONG ?= 800
+SPECTRAL_TOL ?= 5e-9
+
+.PHONY: compile run test test-long clean
+
 compile:
-	cp spectralnorm.java-2.java spectralnorm.java
-	/usr/local/src/jdk1.8.0_121/bin/javac -d .  spectralnorm.java
-measure:
-	sudo modprobe msr
-	sudo ../../RAPL/main "java   spectralnorm 5500" Java spectral-norm
+	$(JAVAC) $(SRC)
 
-run:
-	/usr/local/src/jdk1.8.0_121/bin/java   spectralnorm 5500
+run: compile
+	$(JAVA) -cp . $(CLASS) $(SPECTRAL_N)
 
-mem:
-	/usr/bin/time -v /usr/local/src/jdk1.8.0_121/bin/java   spectralnorm 5500
+test: compile
+	SPECTRAL_N=$(SPECTRAL_N) SPECTRAL_TOL=$(SPECTRAL_TOL) $(PYTEST) $(TEST)
 
-valgrind:
-	valgrind --tool=massif --stacks=yes /usr/local/src/jdk1.8.0_121/bin/java   spectralnorm 5500
+test-long: compile
+	SPECTRAL_N=$(SPECTRAL_N_LONG) SPECTRAL_TOL=$(SPECTRAL_TOL) $(PYTEST) $(TEST)
+
+clean:
+	rm -f $(CLASS).class $(CLASS)\$$Approximate.class __pycache__/*.pyc .pytest_cache -r
