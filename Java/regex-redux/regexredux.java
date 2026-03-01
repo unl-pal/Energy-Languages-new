@@ -60,9 +60,13 @@ public class regexredux {
                                                 "agggtaa[cgt]|[acg]ttaccct");
 
     BiFunction<String, String, Entry<String, Long>> counts = (v, s) -> {
-      Long count = Pattern.compile(v).splitAsStream(s).count() - 1; //Off by one
-      return new AbstractMap.SimpleEntry<>(v, count);
-    };
+  Matcher m = Pattern.compile(v).matcher(s);
+  long count = 0;
+  while (m.find()) {
+    count++;
+  }
+  return new AbstractMap.SimpleEntry<>(v, count);
+};
 
     final Map<String, Long> results = variants.parallelStream()
                                               .map(variant -> counts.apply(variant, sequence))
