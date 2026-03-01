@@ -1,15 +1,23 @@
-compile:
-	cp fasta.java-5.java fasta.java
-	/usr/local/src/jdk1.8.0_121/bin/javac -d .  fasta.java
-measure:
-	sudo modprobe msr
-	sudo ../../RAPL/main "/usr/local/src/jdk1.8.0_121/bin/java   fasta 25000000" Java fasta
+JAVAC ?= javac
+JAVA  ?= java
+PYTEST ?= pytest
 
-run:
-	/usr/local/src/jdk1.8.0_121/bin/java   fasta 25000000
+CLASS := fasta
+SRC := $(CLASS).java
+N ?= 30000000
 
-mem:
-	/usr/bin/time -v /usr/local/src/jdk1.8.0_121/bin/java   fasta 25000000
+.PHONY: compile test run clean
 
-valgrind:
-	valgrind --tool=massif --stacks=yes /usr/local/src/jdk1.8.0_121/bin/java   fasta 25000000
+$(CLASS).class: $(SRC)
+	$(JAVAC) -d . $(SRC)
+
+compile: $(CLASS).class
+
+run: compile
+	$(JAVA) -cp . $(CLASS) $(N)
+
+test: compile
+	LONG_N=$(N) $(PYTEST) -q test_fasta_java.py
+
+clean:
+	rm -f $(CLASS).class
