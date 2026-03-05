@@ -1,3 +1,9 @@
+# The Computer Language Benchmarks Game
+# http://benchmarksgame.alioth.debian.org/
+#
+# contributed by Joerg Baumann
+# many thanks to Oleg Mazurov for his helpful description
+
 from sys import argv
 from math import factorial
 from multiprocessing import cpu_count, Pool
@@ -7,66 +13,42 @@ def permutations(n, start, size):
     p = bytearray(range(n))
     count = bytearray(n)
 
-    # precompute factorial values to avoid repeated calls inside the loop
-    fact = [1] * n
-    f = 1
-    for v in range(1, n):
-        f *= v
-        fact[v] = f
-
     remainder = start
-    v = n - 1
-    while v > 0:
-        q, remainder = divmod(remainder, fact[v])
-        count[v] = q
-        for _ in range(q):
-            tmp = p[0]
-            # rotate left the segment p[0..v] by 1 using slice to reduce Python overhead
-            p[:v] = p[1:v+1]
-            p[v] = tmp
-        v -= 1
+    for v in range(n - 1, 0, -1):
+        count[v], remainder = divmod(remainder, factorial(v))
+        for _ in range(count[v]):
+            p[:v], p[v] = p[1:v + 1], p[0]
 
     assert(count[1] == 0)
     assert(size < 2 or (size % 2 == 0))
 
     if size < 2:
         yield p[:]
-        return
     else:
         rotation_swaps = [None] * n
         for i in range(1, n):
             r = list(range(n))
-            u = 1
-            while u <= i:
-                tmp = r[0]
-                # rotate left the first u elements
-                r[:u] = r[1:u+1]
-                r[u] = tmp
-                u += 1
+            for v in range(1, i + 1):
+                r[:v], r[v] = r[1:v + 1], r[0]
             swaps = []
-            dst = 0
-            for src in r:
+            for dst, src in enumerate(r):
                 if dst != src:
                     swaps.append((dst, src))
-                dst += 1
             rotation_swaps[i] = tuple(swaps)
 
-        local_p = p
-        local_count = count
-        local_rot = rotation_swaps
         while True:
-            yield local_p[:]
-            local_p[0], local_p[1] = local_p[1], local_p[0]
-            yield local_p[:]
+            yield p[:]
+            p[0], p[1] = p[1], p[0]
+            yield p[:]
             i = 2
-            while local_count[i] >= i:
-                local_count[i] = 0
+            while count[i] >= i:
+                count[i] = 0
                 i += 1
             else:
-                local_count[i] += 1
-                t = local_p[:]
-                for dst, src in local_rot[i]:
-                    local_p[dst] = t[src]
+                count[i] += 1
+                t = p[:]
+                for dst, src in rotation_swaps[i]:
+                    p[dst] = t[src]
 
 def alternating_flips_generator(n, start, size):
     maximum_flips = 0
@@ -76,16 +58,9 @@ def alternating_flips_generator(n, start, size):
         if first:
             flips_count = 1
             while True:
-                # reverse prefix [0..first] in place to avoid allocations
-                i = 0
-                j = first
-                while i < j:
-                    permutation[i], permutation[j] = permutation[j], permutation[i]
-                    i += 1
-                    j -= 1
+                permutation[:first + 1] = permutation[first::-1]
                 first = permutation[0]
-                if not first:
-                    break
+                if not first: break
                 flips_count += 1
             if maximum_flips < flips_count:
                 maximum_flips = flips_count
@@ -102,7 +77,7 @@ def task(n, start, size):
 def fannkuch(n):
     if n < 0:
         for data in islice(permutations(-n, 0, factorial(-n)), factorial(-n)):
-            print(''.join(str(x + 1) for x in data))
+            print(''.join(map(lambda n: str(n + 1), data)))
     else:
         assert(n > 0)
 
@@ -125,7 +100,7 @@ def fannkuch(n):
             checksums, maximums = zip(*starmap(task, task_args))
 
         checksum, maximum = sum(checksums), max(maximums)
-        print(f"{checksum}\nPfannkuchen({n}) = {maximum}")
+        print("{0}\nPfannkuchen({1}) = {2}".format(checksum, n, maximum))
 
 if __name__ == "__main__":
     fannkuch(int(argv[1]))
